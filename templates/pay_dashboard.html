@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>payroll management System</h3>
+<hr>
+<p>
+    Welcome, <small>{{request.user.username}}</small>
+</p>
+<hr>
+<a class = "btn btn-info" href = "{% url 'addpayroll' %}">Add payroll </a>
+<hr>
+
+{% if payroll %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">id</th>
+            <th scope="col">Name</th>
+            <th scope="col">grade</th>
+            <th scope="col">gross</th>
+            <th scope="col">basic</th>
+            <th scope="col">taxable</th>
+            <th scope="col">pension</th>
+            <th scope="col">update</th>
+            <th scope="col">delete</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for payroll in payroll %}
+        <tr>
+            <th scope="row">{{payroll.id}}</th>
+            <td>{{payroll.name}}</a></td>
+            <td>{{payroll.grade}}</td>
+            <td>{{payroll.gross}}</td>
+            <td>{{payroll.basic}}</td>
+            <td>{{payroll.taxable}}</td>
+            <td>{{payroll.pension}}</td>
+            <td><a href="{% url 'updatepayroll' pk=payroll.id %}" class="btn btn-success" >Update</a></td>
+            <td><a href="{% url 'deletepayroll' pk=payroll.id %}" class="btn btn-danger" >Delete</a></td>
+        </tr>
+        {% endfor %}
+        
+        </tbody>
+  </table>
+{% else %}
+
+  <div class = "alert alert-danger">   
+  You don't have any payroll yet...
+  </div>
+
+{% endif %}
+
+{% endblock  %}

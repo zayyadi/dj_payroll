@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% load mathfilters %}
+
+{% if employee %}
+
+{% for employee in employee %}
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="text-center lh-1 mb-2">
+                <h6 class="fw-bold">Payslip</h6> <span class="fw-normal">Payment slip for the month of June 2021</span>
+            </div>
+            <div class="d-flex justify-content-end"> <span>Company:Polar Petrochemicals Limited</span> </div>
+            <div class="row">
+                <div class="col-md-10">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">EMP Code</span> <small class="ms-3">{{employee.employee.Employee_id}}</small> </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">Employee First Name: </span> <span  style="text-transform:uppercase;" class="ms-3">{{employee.employee.first_name}}</span> </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">Employee Last Name: </span> <span  style="text-transform:uppercase;" class="ms-3">{{employee.employee.last_name}}</span> </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">TIN: </span> <small class="ms-3">{{employee.employee.nin}}</small> </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">NOD</span> <small class="ms-3">28</small> </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">ESI No.</span> <small class="ms-3"></small> </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">Mode of Pay: </span> <small class="ms-3">{{employee.employee.bank}}</small> </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">Designation</span> <small class="ms-3">Marketing Staff (MK)</small> </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div> <span class="fw-bolder">Ac No.: </span> <small class="ms-3">{{employee.employee.bank_account}}</small> </div>
+                        </div>
+                    </div>
+                </div>
+                <table class="mt-4 table table-bordered">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th scope="col">Earnings</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Deductions</th>
+                            <th scope="col">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">Annual gross Income</th>
+                            <td>{{employee.employee.payroll.grade.annual_gross_pay}}</td>
+                            <th scope="row">Annual Payee</th>
+                            <td>{{employee.employee.payroll.payee}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Monthly gross Income</th>
+                            <td>{{employee.employee.payroll.grade.gross_pay}}</td>
+                            <th scope="row">Monthly Payee</th>
+                            <td>{{employee.employee.payroll.payee|div:12}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Basic</th>
+                            <td>{{employee.employee.payroll.basic}}</td>
+                            <th scope="row">Absence</th>
+                            <td>{{employee.absence}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Housing</th>
+                            <td>{{employee.employee.payroll.housing}}</td>
+                            <th scope="row">Lateness</th>
+                            <td>{{employee.lateness}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Transport</th>
+                            <td>{{employee.employee.payroll.transport}}</td>
+                            <td>Damages</td>
+                            <td>{{employee.damage}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Leave Allowance</th>
+                            <td>{{employee.leave_allowance}}</td>
+                            <td>employee Pension Contribution</td>
+                            <td>{{employee.employee.payroll.pension_emp}}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">overtime</th>
+                            <td>{{employee.overtime}}</td>
+                            <td>Water Rate</td>
+                            <td>0.00</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">CCA</th>
+                            <td>0.00 </td>
+                            <td>Development fee</td>
+                            <td>500.00</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">MA</th>
+                            <td>3000.00</td>
+                            <td>EWF</td>
+                            <td>0.00</td>
+                        </tr>
+                        <tr class="border-top">
+                            <th scope="row">Total Earning</th>
+                            <td>{{employee.total_allowances}}</td>
+                            <td>Total Deductions</td>
+                            <td>{{employee.total_dedcutions}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row">
+                <div class="col-md-4"> <br> <span class="fw-bold">Net Pay : <b>#{{employee.net_pay_after_ed}}</b></span> </div>
+                <div class="border col-md-8">
+                    <div class="d-flex flex-column"> <span>In Words</span> <span> <b>{{employee.num2word}} Naira only</b> </span> </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <div class="d-flex flex-column mt-2"> <span class="fw-bolder">For Polar Petrochemicals Limited</span> <span class="mt-4">Authorised Signatory</span> </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" align="center">
+    <a href="{% url 'pdf' pk=employee.id %}" class="btn btn-success" >Download</a>
+</div>
+
+
+{% endblock %}
+
+{% endfor %}
+{% endif %}
+

@@ -1,0 +1,14 @@
+.pyc
+*/__pycache__/
+*__pycache__
+__pycache__
+.env
+.sqlite3
+dev_env
+*media
+*migrations
+tax
+source
+/static/bootstrap-4.0.0
+/static/css
+/static/js

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% load mathfilters %}
+
+{% block content %}
+
+<h3>Employee management System</h3>
+<hr>
+<p>
+    Welcome, <small>{{request.user.username}}</small>
+</p>
+<hr>
+{% comment %} <a class = "btn btn-info" href = "{% url 'addemployee' %}">Add Employee </a> {% endcomment %}
+<hr>
+
+{% if employee %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">id</th>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
+             <th scope="col">employee Deductions</th> 
+            <th scope="col">net pay</th>
+            <th scope="col">net pay after deductions and earnings</th>
+            <th scope="col">UPDATE EMPLOYEE</th>
+            <th scope="col">UPDATE PAYROLL</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for variable in variable %}
+        
+        <tr>
+            <th scope="row">{{variable.employee.Employee_id}}</th>
+            <td>{{variable.employee.first_name}}</td>
+            <td>{{variable.employee.last_name}}</td>
+            <td>{{variable.total_dedcutions}}</td>
+            <td>{{variable.employee.net_pay}}</td>
+            <td>{{variable.employee.net_pay|add:variable.total_allowances|sub:variable.total_dedcutions}}</td>
+            <td><a href="{% url 'employee-update' pk=variable.employee.id %}" class="btn btn-success" >Update Employee</a></td>
+            <td><a href="{% url 'updatepayroll' pk=variable.id %}" class="btn btn-success" >Update Payroll</a></td> 
+        </tr>
+        {% endfor %}
+        </tbody>
+  </table>
+{% else %}
+
+  <div class = "alert alert-danger">   
+  You don't have any Employee yet...
+  </div>
+
+{% endif %}
+
+{% endblock  %}

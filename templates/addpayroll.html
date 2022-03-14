@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Create a new Payroll Data{% endblock %}
+{% block content %}
+{% load crispy_forms_tags %}
+{% if user.is_authenticated %}
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <h3>Add Payroll</h3>
+        <hr>
+        <form method = "post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{form.media}}
+            {{form|crispy}}
+            <br>
+            <button type = "submit" class = "btn btn-danger">Submit</button>
+        </form>
+    </div>
+  </div>
+
+{% endif %}
+
+{% endblock %}
