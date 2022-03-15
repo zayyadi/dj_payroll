@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django_htmx",
     'mathfilters',
     'wkhtmltopdf',
+    'import_export',
     'payroll'
 ]
 
@@ -107,3 +108,5 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'payroll.User'

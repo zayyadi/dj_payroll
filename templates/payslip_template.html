@@ -30,24 +30,18 @@
                         <div class="col-md-6">
                             <div> <span class="fw-bolder">TIN: </span> <small class="ms-3">{{employee.employee.nin}}</small> </div>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
-                            <div> <span class="fw-bolder">NOD</span> <small class="ms-3">28</small> </div>
+                            <div> <span class="fw-bolder">Mode of Pay: </span><b>{{employee.employee.bank}} </b></div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <div> <span class="fw-bolder">ESI No.</span> <small class="ms-3"></small> </div>
+                            <div> <span class="fw-bolder">Designation</span> <small class="ms-3">{{employee.employee.designation}}</small> </div>
                         </div>
                         <div class="col-md-6">
-                            <div> <span class="fw-bolder">Mode of Pay: </span> <small class="ms-3">{{employee.employee.bank}}</small> </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div> <span class="fw-bolder">Designation</span> <small class="ms-3">Marketing Staff (MK)</small> </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div> <span class="fw-bolder">Ac No.: </span> <small class="ms-3">{{employee.employee.bank_account}}</small> </div>
+                            <div> <span class="fw-bolder">Ac No.: </span> <small class="ms-3"><b>{{employee.employee.get_masked_acc}}</b></small> </div>
                         </div>
                     </div>
                 </div>
@@ -104,16 +98,10 @@
                             <td>0.00</td>
                         </tr>
                         <tr>
-                            <th scope="row">CCA</th>
+                            <th scope="row"></th>
                             <td>0.00 </td>
                             <td>Development fee</td>
                             <td>500.00</td>
-                        </tr>
-                        <tr>
-                            <th scope="row">MA</th>
-                            <td>3000.00</td>
-                            <td>EWF</td>
-                            <td>0.00</td>
                         </tr>
                         <tr class="border-top">
                             <th scope="row">Total Earning</th>

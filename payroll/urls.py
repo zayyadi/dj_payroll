@@ -15,7 +15,7 @@ urlpatterns = [
     path('payslip/<int:pk>/', views.payslip, name="payslip"),
     # path('pdf/',  PDFTemplateView.as_view(template_name='payslip_template.html'), name='pdf')
     path('updatepayroll/<int:pk>/', views.payrollUpdate, name="updatepayroll"),
-    path('employee-update/<int:pk>/', views.employeeUpdate, name="employee-update")
+    # path('employee-update/<int:pk>/', views.employeeUpdate, name="employee-update")
 ]
 
  # path('addemployee/', views.addEmployee, name='addemployee'),

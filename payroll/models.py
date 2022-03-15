@@ -1,9 +1,10 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User, AbstractUser
 
 from decimal import Decimal
 
-from generator import emp_id, get_nin, get_bank_account
+from generator import emp_id, get_nin, get_bank_account, masking
 from num2words import num2words
 
 GENDER=(
@@ -21,6 +22,29 @@ DESIGNATION = (
     ('manager', 'Manager'),
     ('C.O.O', 'C.O.O'),
 )
+
+USER_CHOICES = [
+    ('A', 'Admin'),
+    ('E', 'Employee')
+]
+
+class User(AbstractUser):
+    user_type = models.CharField(choices=USER_CHOICES, max_length=2)
+
+    def is_admin(self):
+        if self.user_type == 'D':
+            return True
+        else:
+            return False
+
+    def is_employee(self):
+        if self.user_type == 'P':
+            return True
+        else:
+            return False
+
+    class Meta:
+        ordering = ('id',)
 
 
 class Department(models.Model):
@@ -192,6 +216,7 @@ class Bank(models.Model):
 
 class Employee(models.Model):
     id = models.AutoField(primary_key=True, unique=True, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_profile')
     Employee_id = models.CharField(default=emp_id,max_length=255,editable=False)
     nin = models.CharField(default=get_nin, max_length=255, editable=False)
     department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name="department")
@@ -215,7 +240,9 @@ class Employee(models.Model):
     @property
     def get_net_pay(self):
         return self.payroll.gross_income - (self.payroll.payee / 12)
-
+    @property
+    def get_masked_acc(self):
+        return masking(self.bank_account, 0, 4, "*")
     
     class Meta:
         ordering = ['-created']
@@ -227,7 +254,7 @@ class Employee(models.Model):
         super(Employee, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f"ID {self.id} - {self.first_name} - {self.last_name} - {self.email}"
+        return f"{self.first_name} - {self.last_name}"
 
 
 class DeductionsAndEarnings(models.Model):
@@ -271,7 +298,7 @@ class DeductionsAndEarnings(models.Model):
         blank=True, 
         verbose_name="equipment damages deductions [Optional]"
     )
-    hours = models.IntegerField()
+    hours = models.IntegerField(default=0)
     rate = models.DecimalField(
         max_digits=12, 
         decimal_places=5, 
@@ -368,3 +395,5 @@ class DeductionsAndEarnings(models.Model):
 
     def __str__(self):
         return F"your {self.leave_allowance}    {self.overtime}     {self.lateness} {self.absence}"
+
+

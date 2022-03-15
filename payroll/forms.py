@@ -1,6 +1,8 @@
 from random import choices
 from django import forms
 from .models import DeductionsAndEarnings, Payroll, Employee,Department, Grade
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
 
 
 class GradeForm(forms.ModelForm):
@@ -104,3 +106,19 @@ class EmployeeSearchForm(forms.Form):
         self.fields['q'].label = 'Search For'
         self.fields['q'].widget.attrs.update(
             {'class': 'form-control'})
+
+USER_CHOICES = [
+    ('D', 'Doctor'),
+    ('P', 'Patient')
+]
+
+class UserCreateForm(UserCreationForm):
+    user_type = forms.ChoiceField(choices=USER_CHOICES, required=True, widget=forms.RadioSelect)
+    class Meta:
+        fields = ("first_name", "last_name", "username", "email", "password1", "password2", "user_type")
+        model = get_user_model()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label = "Username"
+        self.fields["email"].label = "Email address"

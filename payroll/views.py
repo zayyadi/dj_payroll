@@ -1,17 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.contrib import messages
-from django.views.generic import View
-from django.template.loader import render_to_string
 from django.contrib.auth.decorators import user_passes_test
 from django.template.loader import get_template
+from django.contrib.auth import login
+
 from xhtml2pdf import pisa
 
-from django_xhtml2pdf.utils import generate_pdf
-
 from payroll.process import link_callback
-
-from payroll.models import Grade,Employee,Payroll, DeductionsAndEarnings
-from payroll.forms import DepartmentForm, GradeForm, PayrollForm, EmployeeForm, EandDForms
+from payroll.models import Grade,Employee,User, DeductionsAndEarnings
+from payroll.forms import DepartmentForm, GradeForm, PayrollForm, EmployeeForm, EandDForms, UserCreateForm
+from generator import id_generator
 
 
 
@@ -107,20 +105,6 @@ def payslip(request,pk):
     return render(request, "payslip_template.html", context)
 
 @user_passes_test(lambda u: u.is_superuser)
-def employeeUpdate(request, pk):
-    employee = get_object_or_404(Employee, pk=pk)
-    form = EmployeeForm(request.POST or None, request.FILES or None,instance = employee)
-    if form.is_valid():
-        emp = form.save(commit=False)
-        
-        emp.author = request.user
-        emp.save()
-
-        messages.success(request,"Employee has been Updated")
-        return redirect("dashboard")
-    return render(request,"emp_update.html",{"form":form})
-
-@user_passes_test(lambda u: u.is_superuser)
 def payrollUpdate(request, pk):
     employee = get_object_or_404(DeductionsAndEarnings, pk=pk)
     form = EandDForms(request.POST or None, request.FILES or None,instance = employee)
@@ -133,26 +117,6 @@ def payrollUpdate(request, pk):
         messages.success(request,"Payroll has been Updated")
         return redirect("dashboard")
     return render(request,"pay_update.html",{"form":form})
-
-
-
-# class GeneratePdf(View):
-#      def get(self, request, *args, **kwargs):
-#         data = DeductionsAndEarnings.objects.get(id=1)
-#         open('templates/payslip_temp.html', "w").write(render_to_string('payslip_tem.html', {'data': data}))
-
-#         # Converting the HTML template into a PDF file
-#         pdf = html_to_pdf('payslip_temp.html')
-         
-#          # rendering the template
-#         return HttpResponse(pdf, content_type='application/pdf')
-
-# def myview(response, pk):
-#     
-#     open('templates/payslip_temp.html', "w").write(render_to_string('payslip_tem.html', {'data': data}))
-#     resp = HttpResponse(content_type='application/pdf')
-#     result = generate_pdf('payslip_template.html', file_object=resp)
-#     return result
 
 def myview(request, pk):
     template_path = 'payslip_temp.html'
@@ -172,3 +136,36 @@ def myview(request, pk):
     if pisa_status.err:
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
+
+def SignUp(request):
+    if request.method == 'POST':
+        form = UserCreateForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            first_name = user.first_name
+            last_name = user.last_name
+            name = first_name + ' ' + last_name
+            Employee.objects.create(name=name, user=user)
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserCreateForm()
+    return render(request, 'account/signup.html', {'form': form})
+
+def CreateUserProfile(request):
+    if request.method == 'POST':
+        form = EmployeeForm(request.POST)
+        if form.is_valid():
+            profile = form.save(commit=False)
+            # try:
+            password = User.objects.make_random_password()
+            username = profile.name.split()[0] + id_generator()
+            user = User.objects.create(username=username, user_type="P")
+            user.set_password(password)
+            user.save_base(raw=True)
+            profile.user = user
+            profile.save()
+            return redirect('dashboard')
+    else:
+        form = EmployeeForm()
+    return render(request, 'user_profile/profile_create.html', {'form': form})

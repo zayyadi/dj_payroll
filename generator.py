@@ -1,5 +1,6 @@
 import random
 from datetime import datetime
+import string
 
 time = datetime.today().strftime("%Y")
 
@@ -15,12 +16,23 @@ def get_bank_account():
     tin = random.randint(0,9999999999)
     return tin
 
+str="1234123412341234"
+def masking(number, start_num=0, end_num=0, char="#"):
+  number_len = len(number)
+  mask_len = number_len - abs(start_num) - abs(end_num)
+  return(number[:abs(start_num)] + (char * mask_len) + number[-end_num:])
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
 print(emp_id())
 print(get_nin())
 print(get_bank_account())
 
 
-from django.shortcuts import render, redirect, get_object_or_404
+
+
+# from django.shortcuts import render, redirect, get_object_or_404
 # from django.contrib import messages
 # from django.utils.http import urlsafe_base64_encode
 # from django.utils.encoding import force_bytes
