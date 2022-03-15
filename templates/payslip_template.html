@@ -1,5 +1,11 @@
 {% extends 'base.html' %}
 
+{% load humanize %}
+{% load bootstrap4 %}
+
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+
 {% load mathfilters %}
 
 {% if employee %}
@@ -12,7 +18,7 @@
             <div class="text-center lh-1 mb-2">
                 <h6 class="fw-bold">Payslip</h6> <span class="fw-normal">Payment slip for the month of June 2021</span>
             </div>
-            <div class="d-flex justify-content-end"> <span>Company:Polar Petrochemicals Limited</span> </div>
+            <div class="d-flex justify-content-end"> <span>Company:{{company.company_name}}</span> </div>
             <div class="row">
                 <div class="col-md-10">
                     <div class="row">
@@ -57,43 +63,43 @@
                     <tbody>
                         <tr>
                             <th scope="row">Annual gross Income</th>
-                            <td>{{employee.employee.payroll.grade.annual_gross_pay}}</td>
+                            <td>{{employee.employee.payroll.grade.annual_gross_pay|floatformat:2|intcomma}}</td>
                             <th scope="row">Annual Payee</th>
-                            <td>{{employee.employee.payroll.payee}}</td>
+                            <td>{{employee.employee.payroll.payee|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Monthly gross Income</th>
-                            <td>{{employee.employee.payroll.grade.gross_pay}}</td>
+                            <td>{{employee.employee.payroll.grade.gross_pay|floatformat:2|intcomma}}</td>
                             <th scope="row">Monthly Payee</th>
-                            <td>{{employee.employee.payroll.payee|div:12}}</td>
+                            <td>{{employee.employee.payroll.payee|div:12|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Basic</th>
-                            <td>{{employee.employee.payroll.basic}}</td>
+                            <td>{{employee.employee.payroll.basic|floatformat:2|intcomma}}</td>
                             <th scope="row">Absence</th>
-                            <td>{{employee.absence}}</td>
+                            <td>{{employee.absence|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Housing</th>
-                            <td>{{employee.employee.payroll.housing}}</td>
+                            <td>{{employee.employee.payroll.housing|floatformat:2|intcomma}}</td>
                             <th scope="row">Lateness</th>
-                            <td>{{employee.lateness}}</td>
+                            <td>{{employee.lateness|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Transport</th>
-                            <td>{{employee.employee.payroll.transport}}</td>
+                            <td>{{employee.employee.payroll.transport|floatformat:2|intcomma}}</td>
                             <td>Damages</td>
-                            <td>{{employee.damage}}</td>
+                            <td>{{employee.damage|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Leave Allowance</th>
-                            <td>{{employee.leave_allowance}}</td>
+                            <td>{{employee.leave_allowance|floatformat:2|intcomma}}</td>
                             <td>employee Pension Contribution</td>
-                            <td>{{employee.employee.payroll.pension_emp}}</td>
+                            <td>{{employee.employee.payroll.pension_emp|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">overtime</th>
-                            <td>{{employee.overtime}}</td>
+                            <td>{{employee.overtime|floatformat:2|intcomma}}</td>
                             <td>Water Rate</td>
                             <td>0.00</td>
                         </tr>
@@ -105,15 +111,15 @@
                         </tr>
                         <tr class="border-top">
                             <th scope="row">Total Earning</th>
-                            <td>{{employee.total_allowances}}</td>
+                            <td>{{employee.employee.payroll.grade.gross_pay|add:employee.leave_allowance|add:employee.overtime|floatformat:2|intcomma}}</td>
                             <td>Total Deductions</td>
-                            <td>{{employee.total_dedcutions}}</td>
+                            <td></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div class="row">
-                <div class="col-md-4"> <br> <span class="fw-bold">Net Pay : <b>#{{employee.net_pay_after_ed}}</b></span> </div>
+                <div class="col-md-4"> <br> <span class="fw-bold">Net Pay : <b>#{{employee.net_pay_after_ed|floatformat:2|intcomma}}</b></span> </div>
                 <div class="border col-md-8">
                     <div class="d-flex flex-column"> <span>In Words</span> <span> <b>{{employee.num2word}} Naira only</b> </span> </div>
                 </div>

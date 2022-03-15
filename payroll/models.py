@@ -1,50 +1,52 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User, AbstractUser
+from django.core.validators import RegexValidator
 
 from decimal import Decimal
 
-from generator import emp_id, get_nin, get_bank_account, masking
-from num2words import num2words
+from generator import emp_id, get_nin, get_bank_account
+from payroll.choices import *
+from payroll.logic import *
 
-GENDER=(
-    ('others', 'Others'),
-    ('male', 'Male'),
-    ('female', 'Female'),
-)
+class Company(models.Model):
+    company_name = models.CharField(max_length=150)
+    phone = models.BigIntegerField()
+    contact_person = models.CharField(max_length=100)
+    address = models.CharField(max_length=150)
+    email = models.CharField(max_length=100)
+    status = models.BooleanField(default=True)
 
-DESIGNATION = (
-    ('casual', 'Casual'),
-    ('floor', 'Floor Worker'),
-    ('packer', 'packer'),
-    ('label', 'Label Operator'),
-    ('supervisor', 'SUpervisor'),
-    ('manager', 'Manager'),
-    ('C.O.O', 'C.O.O'),
-)
+    class Meta:
+        verbose_name_plural = 'Companies'
 
-USER_CHOICES = [
-    ('A', 'Admin'),
-    ('E', 'Employee')
-]
+    def __str__(self):
+        return self.company_name
+
 
 class User(AbstractUser):
     user_type = models.CharField(choices=USER_CHOICES, max_length=2)
 
     def is_admin(self):
-        if self.user_type == 'D':
+        if self.user_type == 'A':
             return True
         else:
             return False
 
     def is_employee(self):
-        if self.user_type == 'P':
+        if self.user_type == 'E':
             return True
         else:
             return False
 
     class Meta:
         ordering = ('id',)
+
+class Base_payroll(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_payroll')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    payment_method = models.CharField(max_length=3, choices=PAYMENT_METHOD, default='B')
 
 
 class Department(models.Model):
@@ -62,12 +64,8 @@ class Grade(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def get_annual_gross_pay(self):
-        return self.gross_pay*12
-
     def save(self,*args, **kwargs):
-        self.annual_gross_pay= self.get_annual_gross_pay
+        self.annual_gross_pay= get_annual_gross_pay(self)
 
         super(Grade, self).save(*args, **kwargs)
 
@@ -77,141 +75,46 @@ class Payroll(models.Model):
     transport = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
     basic = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
     taxable = models.BooleanField(default=False)
-    pension_emp = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    pension_emly = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
+    pension_emp = models.DecimalField(max_digits=12, decimal_places=5, blank=True, verbose_name= "pension Employee")
+    pension_emly = models.DecimalField(max_digits=12, decimal_places=5, blank=True, verbose_name= "pension Employer")
     pension = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
     gross_income = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    consolidated_relief = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    taxable_income = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    payee = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
+    consolidated_relief = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    taxable_income = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    payee = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
     
-
-    def __str__(self):
-        return str(self.grade)
-    
-    @property
-    def get_basic(self):
-        return self.grade.gross_pay * 40 / 100
-    
-    @property
-    def get_housing(self):
-        return self.grade.gross_pay * 10 / 100
-
-    @property
-    def get_transport(self):
-        return self.grade.gross_pay * 10 / 100
-    
-    @property
-    def get_bht(self):
-        return self.get_basic + self.housing +self.get_transport
-    
-    @property
-    def get_employee_pension(self):
-        if self.grade.annual_gross_pay <= 360000:
-            return 0
-        return self.get_bht * 8/100
-
-    @property
-    def get_employer_pension(self):
-        if self.grade.annual_gross_pay <= 360000:
-            return 0
-        return self.get_bht * 10/100
-    
-    @property
-    def add_pension(self):
-        return self.get_employee_pension + self.get_employer_pension
-
-    @property
-    def pension_logic(self):
-        if self.grade.annual_gross_pay <= 360000:
-            return self.add_pension==0
-        return self.get_employee_pension
-
-    @property
-    def twenty_percents(self):
-        return self.grade.annual_gross_pay * 20 / 100
-
     @property
     def calc_cons(self):
-        return self.grade.annual_gross_pay * 1/100 + self.twenty_percents
+        return self.grade.annual_gross_pay * 1/100 
 
     @property
     def calc_conss(self):
-        return 200000 + self.grade.annual_gross_pay * 20/100
-
-    def get_consolidated_relief(self):
-        
-        if self.calc_cons > self.calc_conss:
-            return self.calc_cons
-        return self.calc_conss
-        
+        return 200000 
 
     @property
     def get_taxable_income(self) -> Decimal:
-        return self.grade.annual_gross_pay - self.consolidated_relief
+        return self.grade.annual_gross_pay - self.consolidated_relief - (self.pension_emp * 12)
 
-    @property
-    def first_taxable(self):
-        if self.get_taxable_income <= 88000:
-            return 0
-    
-    @property
-    def second_taxable(self):
-        if self.get_taxable_income - 300000<= 300000:
-            return(300000 * 7/100)
-    
-    @property        
-    def third_taxable(self):
-        if self.get_taxable_income - 600000 >= 300000:
-            return(300000 * 11/100)
-    
-    @property        
-    def fourth_taxable(self):
-        if self.get_taxable_income - 1100000 >= 500000:
-            return(500000 * 15/100)
-    
-    @property
-    def fifth_taxable(self):    
-        if self.get_taxable_income - 1600000 >= 500000:
-            return(500000 * 19/100)
-            
-    @property        
-    def payee_logic(self):
-        if self.get_taxable_income <= 88000:
-            return self.first_taxable
-        elif self.get_taxable_income <= 300000:
-            return self.second_taxable
-        elif self.get_taxable_income > 300000:
-            return self.second_taxable + self.third_taxable
-        elif self.get_taxable_income >600000:
-            return self.second_taxable + self.third_taxable + self.fourth_taxable
-        elif self.get_taxable_income >1100000:
-            return self.second_taxable + self.third_taxable + self.fourth_taxable + self.fifth_taxable
+    def __str__(self):
+        return str(self.grade)
 
 
     def save(self, *args, **kwargs):
-        self.basic = self.get_basic
-        self.housing = self.get_housing
-        self.transport = self.get_transport
-        self.pension_emp = self.get_employee_pension
-        self.pension_emly = self.get_employer_pension
-        self.pension = self.pension_logic
-        self.gross_income = self.grade.gross_pay - self.pension_logic
-        self.consolidated_relief = self.get_consolidated_relief()
+        self.basic = get_basic(self)
+        self.housing = get_housing(self)
+        self.transport = get_transport(self)
+        self.pension_emp = get_employee_pension(self)
+        self.pension_emly = get_employer_pension(self)
+        self.pension = pension_logic(self)
+        self.gross_income = self.grade.gross_pay - pension_logic(self)
+        self.consolidated_relief = calc_consolidated_relief(self)
         self.taxable_income = self.get_taxable_income
-        self.payee = self.payee_logic
+        self.payee = payee_logic(self)
 
         if self.basic >= 30000:
             self.taxable = True
 
         super(Payroll, self).save(*args, **kwargs)
-
-class Bank(models.Model):
-    name = models.CharField(max_length=255, default="Zenith Bank", blank=False)
-
-    def __str__(self):
-        return self.name
-
 
 
 class Employee(models.Model):
@@ -223,24 +126,17 @@ class Employee(models.Model):
     payroll = models.ForeignKey(Payroll, on_delete=models.PROTECT, blank=True, related_name='employee_pay')
     first_name = models.CharField(max_length=255, blank=False, verbose_name='first name')
     last_name = models.CharField(max_length=255, blank=False, verbose_name='last   name')
+    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    phone = models.CharField(validators=[phone_regex], max_length=17, blank=True)
     email = models.CharField(max_length=255, blank=True, verbose_name='email', unique=True)
     gender = models.CharField(max_length=255, choices=GENDER, default='others', blank=False, verbose_name='gender')
     address = models.CharField(max_length=255, blank=False, unique=True, verbose_name='address')
     created = models.DateTimeField(default=timezone.now, blank=False)
-    net_pay = models.DecimalField(max_digits=12, decimal_places=5, default=0.0, blank=True)
+    net_pay = models.DecimalField(max_digits=12, decimal_places=2, default=0.0, blank=True)
     designation = models.CharField(max_length=255, choices=DESIGNATION, default='casual', blank=False, verbose_name='designation')
-    
-    bank = models.ForeignKey(Bank, on_delete=models.PROTECT, related_name="employee_bank")
+    bank = models.CharField(max_length=5, choices=BANK, default='Z', verbose_name='employee BANK')
     bank_account = models.CharField(default=get_bank_account, max_length=255, editable=False)
-    
-    @property
-    def get_email(self):
-        return self.first_name + "." + self.last_name + "@polarpetrochemicalsltd.com"
 
-    @property
-    def get_net_pay(self):
-        return self.payroll.gross_income - (self.payroll.payee / 12)
-    @property
     def get_masked_acc(self):
         return masking(self.bank_account, 0, 4, "*")
     
@@ -248,8 +144,8 @@ class Employee(models.Model):
         ordering = ['-created']
 
     def save(self,*args, **kwargs):
-        self.email= self.get_email
-        self.net_pay = self.get_net_pay
+        self.email= get_email(self)
+        self.net_pay = get_net_pay(self)
 
         super(Employee, self).save(*args, **kwargs)
 
@@ -324,7 +220,7 @@ class DeductionsAndEarnings(models.Model):
     net_pay_after_ed = models.DecimalField(
         max_digits=12,
         default=0.0, 
-        decimal_places=5, 
+        decimal_places=2, 
         blank=True,
         verbose_name="net pay fater Earnings and Deductions"
     )
@@ -335,62 +231,17 @@ class DeductionsAndEarnings(models.Model):
     class Meta:
         verbose_name_plural="Earnings & Deductions"
     
-    @property
-    def get_annual_leave(self):
-        if self.activate_leave_allowance is True:
-            return self.employee.payroll.grade.annual_gross_pay * 10 / 100
-        return 0
-
-    @property
-    def get_overtime(self):
-        if self.activate_overtime_allowance is True:
-            return self.rate * self.hours
-        return 0
-
-    @property
-    def get_lateness(self):
-        if self.lateness_deduction is True:
-            return self.rate * self.hours
-        return 0
     
-    @property
-    def get_absence(self):
-        if self.absence_deduction is True:
-            return self.rate * self.hours
-        return 0
-    
-    @property
-    def get_damage(self):
-        if self.damage_deduction is True:
-            return self.employee.net_pay * 10 / 100
-        return 0 
-
-    @property
-    def get_total_deduction(self):
-        return self.get_damage + self.get_absence + self.get_lateness
-
-    @property
-    def get_total_allowances(self):
-        return self.get_overtime + self.get_annual_leave
-
-    @property
-    def get_netpay_after_deduction_earning(self):
-        return self.employee.net_pay + self.total_allowances- self.total_dedcutions
-
-    @property
-    def get_num2words(self):
-        return num2words(self.get_netpay_after_deduction_earning)
-
     def save(self,*args, **kwargs):
-        self.leave_allowance = self.get_annual_leave
-        self.overtime = self.get_overtime
-        self.absence = self.get_absence
-        self.lateness = self.get_lateness
-        self.damage = self.get_damage
-        self.total_allowances = self.get_total_allowances
-        self.total_dedcutions = self.get_total_deduction
-        self.num2word= self.get_num2words
-        self.net_pay_after_ed= self.get_netpay_after_deduction_earning
+        self.leave_allowance = get_annual_leave(self)
+        self.overtime = get_overtime(self)
+        self.absence = get_absence(self)
+        self.lateness = get_lateness(self)
+        self.damage = get_damage(self)
+        self.total_allowances = get_total_allowances(self)
+        self.total_dedcutions = get_total_deduction(self)
+        self.num2word= get_num2words(self)
+        self.net_pay_after_ed= get_netpay_after_deduction_earning(self)
         super(DeductionsAndEarnings, self).save(*args, **kwargs)
 
     def __str__(self):

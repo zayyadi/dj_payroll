@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     'mathfilters',
     'wkhtmltopdf',
     'import_export',
+    'django.contrib.humanize',
+    'bootstrap4',
     'payroll'
 ]
 

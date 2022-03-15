@@ -7,7 +7,7 @@ from django.contrib.auth import login
 from xhtml2pdf import pisa
 
 from payroll.process import link_callback
-from payroll.models import Grade,Employee,User, DeductionsAndEarnings
+from payroll.models import Grade,Employee,User, DeductionsAndEarnings, Company
 from payroll.forms import DepartmentForm, GradeForm, PayrollForm, EmployeeForm, EandDForms, UserCreateForm
 from generator import id_generator
 
@@ -98,8 +98,10 @@ def addEandD(request):
 @user_passes_test(lambda u: u.is_superuser)
 def payslip(request,pk):
     employee = get_object_or_404(DeductionsAndEarnings, pk=pk)
+    company = Company.objects.all()
     context = {
         "employee": employee,
+        "company" : company,
     }
 
     return render(request, "payslip_template.html", context)

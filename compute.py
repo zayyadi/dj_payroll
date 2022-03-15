@@ -80,6 +80,47 @@
 # print(trans)
 # print(pension)
 
+from decimal import Decimal
+
+def first_taxable():
+    if 11100000 <= 88000:
+        return 0
+
+fir = 280000
+def second_taxable() -> Decimal:
+    if 11100 - 300000 < 300000 or 1536448 >= 300000:
+        return (300000 * 7/100)
+
+        
+def third_taxable():
+    if (1536448-600000) <= 300000:
+        return(300000 * 11/100)
+    elif (1536448)
+
+        
+def fourth_taxable():
+    if (1536448-600000)  >= 500000:
+        return(500000 * 15/100)
 
 
+def fifth_taxable():    
+    if (1536448-1100000) <= 500000:
+        return((1536448-1100000) * 19/100)
+        
+        
+def payee_logic():
+    if 1624000 <= 88000:
+        return first_taxable()
+    elif 1624000 <= 300000:
+        return second_taxable()
+    elif 1624000 > 300000:
+        return second_taxable() + third_taxable()
+    elif 1624000 >600000:
+        return second_taxable() + third_taxable() + fourth_taxable()
+    elif 1624000 >1100000:
+        return second_taxable() + third_taxable() + fourth_taxable() + fifth_taxable()
 
+print(third_taxable())
+print(second_taxable())
+print(fourth_taxable())
+print(fifth_taxable())

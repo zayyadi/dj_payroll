@@ -25,11 +25,6 @@ def masking(number, start_num=0, end_num=0, char="#"):
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
-print(emp_id())
-print(get_nin())
-print(get_bank_account())
-
-
 
 
 # from django.shortcuts import render, redirect, get_object_or_404
@@ -137,3 +132,4 @@ print(get_bank_account())
 #     messages.success(request,"Employee Deleted Successfully")
 
 #     return redirect("emmployeedashboard")
+
