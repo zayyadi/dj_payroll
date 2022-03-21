@@ -2,17 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.template.loader import get_template
-from django.contrib.auth import login
+from django.db.models.functions import TruncMonth
+from django.db.models import Sum
+from django.views.generic import TemplateView 
+
 
 from xhtml2pdf import pisa
 
 from payroll.process import link_callback
 from payroll.models import Grade,Employee,User, DeductionsAndEarnings, Company
 from payroll.forms import DepartmentForm, GradeForm, PayrollForm, EmployeeForm, EandDForms, UserCreateForm
-from generator import id_generator
-
-
-
 
 
 def home(request):
@@ -21,13 +20,13 @@ def home(request):
 
     return render(request,"home.html", {"employee": employee})
 
-@user_passes_test(lambda u: u.is_superuser)
 def dashboard(request):
     employee = Employee.objects.all()
     variable = DeductionsAndEarnings.objects.all()
+    total_pay = DeductionsAndEarnings.objects.annotate(month=TruncMonth('base_payroll__start_date')).values('month').annotate(total_amount=Sum('employee__payroll__grade__gross_pay'))
 
     context = {
-        
+        "total":total_pay,
         "employee": employee,
         "variable": variable
     }
@@ -139,35 +138,4 @@ def myview(request, pk):
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
-def SignUp(request):
-    if request.method == 'POST':
-        form = UserCreateForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            first_name = user.first_name
-            last_name = user.last_name
-            name = first_name + ' ' + last_name
-            Employee.objects.create(name=name, user=user)
-            login(request, user)
-            return redirect('home')
-    else:
-        form = UserCreateForm()
-    return render(request, 'account/signup.html', {'form': form})
 
-def CreateUserProfile(request):
-    if request.method == 'POST':
-        form = EmployeeForm(request.POST)
-        if form.is_valid():
-            profile = form.save(commit=False)
-            # try:
-            password = User.objects.make_random_password()
-            username = profile.name.split()[0] + id_generator()
-            user = User.objects.create(username=username, user_type="P")
-            user.set_password(password)
-            user.save_base(raw=True)
-            profile.user = user
-            profile.save()
-            return redirect('dashboard')
-    else:
-        form = EmployeeForm()
-    return render(request, 'user_profile/profile_create.html', {'form': form})

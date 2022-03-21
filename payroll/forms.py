@@ -30,13 +30,31 @@ class PayrollForm(forms.ModelForm):
             "taxable": forms.CheckboxInput(),
         }
 
+class SelectEmployeeForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].queryset = Employee.objects.filter(is_active=False)
+        self.fields['employee'].widget.attrs.update({'class': 'textinput form-control'})
+    class Meta:
+        model = Employee
+        fields = ['employee']
+
+
 class EmployeeForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['first_name'].widget.attrs.update({'class': 'textinput form-control', 'pattern' : '[a-zA-Z\s]{1,50}', 'title' : 'Alphabets and Spaces only'})
+        self.fields['last_name'].widget.attrs.update({'class': 'textinput form-control', 'pattern' : '[a-zA-Z\s]{1,50}', 'title' : 'Alphabets and Spaces only'})
+        self.fields['phone'].widget.attrs.update({'class': 'textinput form-control', 'maxlength': '10', 'pattern' : '[0-9]{10}', 'title' : 'Numbers only'})
+        self.fields['email'].widget.attrs.update({'class': 'textinput form-control'})
+        self.fields['address'].widget.attrs.update({'class': 'textinput form-control'})
     class Meta:
         model = Employee
         fields = (
             "department",
             "first_name",
             "last_name",
+            "phone",
             "email",
             "gender",
             "address",
@@ -78,6 +96,8 @@ class EandDForms(forms.ModelForm):
             'absence_deduction',
             'activate_overtime_allowance',
             'activate_leave_allowance',
+            'activate_cooperative_deduction',
+            'activate_staff_loan_deduction',
             'hours',
             'rate',
         )
@@ -108,8 +128,8 @@ class EmployeeSearchForm(forms.Form):
             {'class': 'form-control'})
 
 USER_CHOICES = [
-    ('D', 'Doctor'),
-    ('P', 'Patient')
+    ('A', 'Admin'),
+    ('E', 'Employee')
 ]
 
 class UserCreateForm(UserCreationForm):

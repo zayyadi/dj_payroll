@@ -75,33 +75,33 @@
                         </tr>
                         <tr>
                             <th scope="row">Basic</th>
-                            <td>{{employee.employee.payroll.basic|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.employee.payroll.basic|floatformat:2|intcomma}}</td>
                             <th scope="row">Absence</th>
-                            <td>{{employee.absence|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.absence|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Housing</th>
-                            <td>{{employee.employee.payroll.housing|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.employee.payroll.housing|floatformat:2|intcomma}}</td>
                             <th scope="row">Lateness</th>
-                            <td>{{employee.lateness|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.lateness|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Transport</th>
-                            <td>{{employee.employee.payroll.transport|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.employee.payroll.transport|floatformat:2|intcomma}}</td>
                             <td>Damages</td>
-                            <td>{{employee.damage|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.damage|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">Leave Allowance</th>
-                            <td>{{employee.leave_allowance|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.leave_allowance|floatformat:2|intcomma}}</td>
                             <td>employee Pension Contribution</td>
-                            <td>{{employee.employee.payroll.pension_emp|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.employee.payroll.pension_emp|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row">overtime</th>
-                            <td>{{employee.overtime|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.overtime|floatformat:2|intcomma}}</td>
                             <td>Water Rate</td>
-                            <td>0.00</td>
+                            <td>₦ {{employee.water_fee|floatformat:2|intcomma}}</td>
                         </tr>
                         <tr>
                             <th scope="row"></th>
@@ -111,15 +111,15 @@
                         </tr>
                         <tr class="border-top">
                             <th scope="row">Total Earning</th>
-                            <td>{{employee.employee.payroll.grade.gross_pay|add:employee.leave_allowance|add:employee.overtime|floatformat:2|intcomma}}</td>
+                            <td>₦ {{employee.employee.payroll.grade.gross_pay|add:employee.leave_allowance|add:employee.overtime|floatformat:2|intcomma}}</td>
                             <td>Total Deductions</td>
-                            <td></td>
+                            <td>₦ {{employee.employee.payroll.payee|div:12|add:employee.absence|add:employee.employee.payroll.pension_emp|add:employee.lateness|add:employee.damage|floatformat:2|intcomma}}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div class="row">
-                <div class="col-md-4"> <br> <span class="fw-bold">Net Pay : <b>#{{employee.net_pay_after_ed|floatformat:2|intcomma}}</b></span> </div>
+                <div class="col-md-4"> <br> <span class="fw-bold">Net Pay : <b>₦{{employee.net_pay_after_ed|floatformat:2|intcomma}}</b></span> </div>
                 <div class="border col-md-8">
                     <div class="d-flex flex-column"> <span>In Words</span> <span> <b>{{employee.num2word}} Naira only</b> </span> </div>
                 </div>

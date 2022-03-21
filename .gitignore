@@ -13,3 +13,5 @@ source
 /static/css
 /static/js
 /staticfiles
+*.md
+script.py
