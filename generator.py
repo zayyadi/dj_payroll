@@ -9,11 +9,11 @@ def emp_id():
     return f"EMP-{number}-{time}"
 
 def get_nin():
-    nin_num = random.randint(0,9999999999)
+    nin_num = random.randint(1000000000,9999999999)
     return f"NG-{nin_num}" 
 
 def get_bank_account():
-    tin = random.randint(0,9999999999)
+    tin = random.randint(1000000000,9999999999)
     return tin
 
 str="1234123412341234"

@@ -10,6 +10,8 @@ from generator import emp_id, get_nin, get_bank_account
 from payroll.choices import *
 from payroll.logic import *
 
+from date.models import MonthField
+
 
 class Company(models.Model):
     company_name = models.CharField(max_length=150)
@@ -26,26 +28,25 @@ class Company(models.Model):
         return self.company_name
 
 
-class Base_payroll(models.Model):
-    company = models.ForeignKey(
-        Company, on_delete=models.CASCADE, related_name="company_payroll"
-    )
-    start_date = models.DateField()
-    end_date = models.DateField()
-    payment_method = models.CharField(max_length=3, choices=PAYMENT_METHOD, default="B")
-
 
 class Department(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="company_department")
     name = models.CharField(max_length=255, unique=True, db_index=True, blank=False)
+    
+    def __str__(self):
+        return self.name
+
+class Unit(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="department_unit")
+    name = models.CharField(max_length=1, choices=UNIT, default="N", blank=True)
 
     def __str__(self):
         return self.name
 
-
 class Grade(models.Model):
     name = models.CharField(max_length=255, blank=True, unique=True)
-    gross_pay = models.DecimalField(max_digits=12, decimal_places=5, blank=False)
-    annual_gross_pay = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
+    gross_pay = models.DecimalField(max_digits=12, decimal_places=2, blank=False)
+    annual_gross_pay = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
 
     def __str__(self):
         return self.name
@@ -56,76 +57,29 @@ class Grade(models.Model):
         super(Grade, self).save(*args, **kwargs)
 
 
-class Payroll(models.Model):
-    grade = models.ForeignKey(
-        Grade, on_delete=models.PROTECT, related_name="payroll_grade"
-    )
-    housing = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    transport = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    basic = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    taxable = models.BooleanField(default=False)
-    pension_emp = models.DecimalField(
-        max_digits=12, decimal_places=5, blank=True, verbose_name="pension Employee"
-    )
-    pension_emly = models.DecimalField(
-        max_digits=12, decimal_places=5, blank=True, verbose_name="pension Employer"
-    )
-    pension = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    gross_income = models.DecimalField(max_digits=12, decimal_places=5, blank=True)
-    consolidated_relief = models.DecimalField(
-        max_digits=12, decimal_places=2, blank=True
-    )
-    taxable_income = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
-    payee = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
 
-    @property
-    def calc_cons(self):
-        return self.grade.annual_gross_pay * 1 / 100
-
-    @property
-    def calc_conss(self):
-        return 200000
-
-    @property
-    def get_taxable_income(self) -> Decimal:
-        return (
-            self.grade.annual_gross_pay
-            - self.consolidated_relief
-            - (self.pension_emp * 12)
-        )
-
-    def __str__(self):
-        return f"{self.grade}         {self.grade.gross_pay}"
-
-    def save(self, *args, **kwargs):
-        self.basic = get_basic(self)
-        self.housing = get_housing(self)
-        self.transport = get_transport(self)
-        self.pension_emp = get_employee_pension(self)
-        self.pension_emly = get_employer_pension(self)
-        self.pension = pension_logic(self)
-        self.gross_income = self.grade.gross_pay - pension_logic(self)
-        self.consolidated_relief = calc_consolidated_relief(self)
-        self.taxable_income = self.get_taxable_income
-        self.payee = payee_logic(self)
-
-        if self.basic >= 30000:
-            self.taxable = True
-
-        super(Payroll, self).save(*args, **kwargs)
 
 
 class Employee(models.Model):
     id = models.AutoField(primary_key=True, unique=True, editable=False)
-    Employee_id = models.CharField(default=emp_id, max_length=255, editable=False)
+    employee_id = models.CharField(default=emp_id, max_length=255, editable=False)
+    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name='employees_department')
+    unit = models.ForeignKey(Unit, on_delete=models.PROTECT, related_name='employees_unit')
     nin = models.CharField(default=get_nin, max_length=255, editable=False)
+    tin_no = models.CharField(default=get_nin, max_length=255, editable=False)
     department = models.ForeignKey(
         Department, on_delete=models.PROTECT, related_name="department"
     )
-    payroll = models.ForeignKey(
-        Payroll, on_delete=models.PROTECT, blank=True, related_name="employee_pay"
+    date_of_birth = models.DateField()
+    date_of_employment = models.DateField(null=True)
+    contract_type = models.CharField(choices=CONTRACT_TYPE, max_length=1, null=True)
+    grade = models.ForeignKey(
+        Grade, on_delete=models.PROTECT, related_name="employee_grade"
     )
     first_name = models.CharField(
+        max_length=255, blank=False, verbose_name="first name"
+    )
+    middle_name = models.CharField(
         max_length=255, blank=False, verbose_name="first name"
     )
     last_name = models.CharField(max_length=255, blank=False, verbose_name="last name")
@@ -150,13 +104,10 @@ class Employee(models.Model):
         verbose_name="gender",
     )
     address = models.CharField(
-        max_length=255, blank=False, unique=True, verbose_name="address"
+        max_length=255, blank=True, null=True, verbose_name="address"
     )
     created = models.DateTimeField(default=timezone.now, blank=False)
-    net_pay = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0.0, blank=True
-    )
-    designation = models.CharField(
+    job_title = models.CharField(
         max_length=255,
         choices=DESIGNATION,
         default="casual",
@@ -164,9 +115,12 @@ class Employee(models.Model):
         verbose_name="designation",
     )
     bank = models.CharField(
-        max_length=5, choices=BANK, default="Z", verbose_name="employee BANK"
+        max_length=10, choices=BANK, default="Z", verbose_name="employee BANK"
     )
-    bank_account = models.CharField(
+    bank_account_name = models.CharField(
+        max_length=255, verbose_name="Bank Account Name", unique=True
+    )
+    bank_account_number = models.CharField(
         default=get_bank_account, max_length=255, editable=False
     )
     is_active = models.BooleanField(default=True)
@@ -177,12 +131,9 @@ class Employee(models.Model):
     class Meta:
         ordering = ["-created"]
 
-    def get_absolute_url(self):
-        return reverse("employee", args=[self.full_name])
 
     def save(self, *args, **kwargs):
-        self.email = self.get_email
-        self.net_pay = get_net_pay(self)
+        self.email = get_email(self)
         self.full_name = get_slug(self)
         super(Employee, self).save(*args, **kwargs)
 
@@ -190,12 +141,27 @@ class Employee(models.Model):
         return f"{self.first_name} - {self.last_name}"
 
 
-class DeductionsAndEarnings(models.Model):
-    base_payroll = models.ForeignKey(
-        Base_payroll, on_delete=models.PROTECT, related_name="base_payrolls"
+class Payroll(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='employee_payroll')
+    housing = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    transport = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    basic = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    pension_emp = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, verbose_name="pension Employee"
     )
+    pension_emly = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, verbose_name="pension Employer"
+    )
+    pension = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    gross_income = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    consolidated_relief = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True
+    )
+    taxable_income = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    payee = models.DecimalField(max_digits=12, decimal_places=2, blank=True)
+    month_year = MonthField("Month Value", help_text="some help...", null=True)
     employee = models.ForeignKey(
-        Employee, on_delete=models.PROTECT, related_name="employees_deduction"
+        Employee, on_delete=models.PROTECT, related_name="employees_deduction",
     )
     lateness_deduction = models.BooleanField(default=False)
     damage_deduction = models.BooleanField(default=False)
@@ -206,27 +172,16 @@ class DeductionsAndEarnings(models.Model):
     activate_staff_loan_deduction = models.BooleanField(default=False)
     overtime = models.DecimalField(
         max_digits=12,
-        decimal_places=5,
+        decimal_places=2,
+        default = 300,
         blank=True,
         verbose_name="Overtime worked Allowance",
     )
     leave_allowance = models.DecimalField(
         max_digits=12,
-        decimal_places=5,
+        decimal_places=2,
         blank=True,
         verbose_name="Annual leave Allowance",
-    )
-    lateness = models.DecimalField(
-        max_digits=12,
-        decimal_places=5,
-        blank=True,
-        verbose_name="late to work deduction",
-    )
-    absence = models.DecimalField(
-        max_digits=12,
-        decimal_places=5,
-        blank=True,
-        verbose_name="absence from work deductions",
     )
     damage = models.DecimalField(
         max_digits=8,
@@ -234,11 +189,12 @@ class DeductionsAndEarnings(models.Model):
         blank=True,
         verbose_name="equipment damages deductions [Optional]",
     )
-    hours = models.IntegerField(default=0)
-    days_absent = models.IntegerField(default=0)
+    late_hours = models.IntegerField(default=0, verbose_name="numbers of hours late [Optional")
+    overtime_hours = models.IntegerField(default=0, verbose_name="Number of hours worked [Optional]")
+    days_absent = models.IntegerField(default=0, verbose_name="Numbers of days absent [Optional")
     lateness_amount_deduction_rate = models.DecimalField(
         max_digits=12,
-        decimal_places=5,
+        decimal_places=2,
         default=300,
         blank=True,
         verbose_name="lateness amount deduction rate in Naira [Optional]",
@@ -250,37 +206,35 @@ class DeductionsAndEarnings(models.Model):
         blank=True,
         verbose_name="absence amount deduction rate in Naira [Optional]",
     )
-    cooperative_deduction_rate = models.DecimalField(
+    cooperative_deduction = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        default=0,
         blank=True,
         verbose_name="Coperative members amount deduction rate in Naira [Optional]",
     )
-    staff_loan_deduction_rate = models.DecimalField(
+    staff_loan_deduction = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        default=0,
         blank=True,
         verbose_name="Staff loan amount deduction rate in Naira [Optional]",
     )
-    total_dedcutions = models.DecimalField(
-        max_digits=12, default=0.0, decimal_places=5, blank=True
+    total_deductions = models.DecimalField(
+        max_digits=12, default=0.0, decimal_places=2, blank=True
     )
     total_allowances = models.DecimalField(
-        max_digits=12, default=0.0, decimal_places=5, blank=True
+        max_digits=12, default=0.0, decimal_places=2, blank=True
     )
     water_fee = models.DecimalField(
-        max_digits=12, default=150.00, decimal_places=5, blank=True
+        max_digits=12, decimal_places=2, blank=True
     )
     development_fee = models.DecimalField(
-        max_digits=12, default=200.00, decimal_places=5, blank=True
+        max_digits=12, decimal_places=2, blank=True
     )
 
     num2word = models.CharField(
         max_length=255, blank=True, editable=False
     )
-    net_pay_after_ed = models.DecimalField(
+    net_pay = models.DecimalField(
         max_digits=12,
         default=0.0,
         decimal_places=2,
@@ -288,22 +242,106 @@ class DeductionsAndEarnings(models.Model):
         verbose_name="net pay after Earnings and Deductions",
     )
 
-    class Meta:
-        verbose_name_plural = "Earnings & Deductions"
+    def get_absolute_url(self):
+        return reverse("payslip", args=[self.slug])
 
-    def save(self, *args, **kwargs):
-        self.leave_allowance = get_annual_leave(self)
-        self.overtime = get_overtime(self)
-        self.absence = get_absence(self)
-        self.lateness = get_lateness(self)
-        self.damage = get_damage(self)
-        self.total_allowances = get_total_allowances(self)
-        self.total_dedcutions = get_total_deduction(self)
-        self.num2word = get_num2words(self)
-        self.net_pay_after_ed = get_netpay_after_deduction_earning(self)
-        self.cooperative_deduction_rate = get_cooperative(self)
-        self.staff_loan_deduction_rate = get_staff_loan(self)
-        super(DeductionsAndEarnings, self).save(*args, **kwargs)
+    @property
+    def get_slug(self):
+        return self.employee.full_name
 
     def __str__(self):
-        return f"your {self.leave_allowance}    {self.overtime}     {self.lateness} {self.absence}"
+        return f"{self.net_pay}"
+
+    def __unicode__(self):
+        return self.month_year
+
+
+    @property
+    def calc_cons(self):
+        return self.grade.annual_gross_pay * 1 / 100
+
+    @property
+    def calc_conss(self):
+        return 200000
+    
+    @property
+    def activate_cooperative_deduction(self):
+        if self.activate_cooperative_deduction is True:
+            return self.staff_loan_deduction
+        return 0
+    @property
+    def activate_staff_loan_deduction(self):
+        if self.activate_staff_loan_deduction is True:
+            return self.cooperative_deduction
+        return 0
+
+    @property
+    def get_taxable_income(self) -> Decimal:
+        return (
+            self.grade.annual_gross_pay
+            - self.consolidated_relief
+            - (self.pension_emp * 12)
+        )
+
+    def save(self, *args, **kwargs):
+        self.basic = get_basic(self)
+        self.housing = get_housing(self)
+        self.transport = get_transport(self)
+        self.pension_emp = get_employee_pension(self)
+        self.pension_emly = get_employer_pension(self)
+        self.pension = pension_logic(self)
+        self.gross_income = self.grade.gross_pay - pension_logic(self)
+        self.consolidated_relief = calc_consolidated_relief(self)
+        self.taxable_income = self.get_taxable_income
+        self.payee = payee_logic(self)
+        self.leave_allowance = get_annual_leave(self)
+        self.overtime = get_overtime(self)
+        self.absence_amount_deduction_rate = get_absence(self)
+        self.lateness_amount_deduction_rate = get_lateness(self)
+        self.damage = get_damage(self)
+        self.total_allowances = get_total_allowances(self)
+        self.total_deductions = get_total_deduction(self)
+        self.num2word = get_num2words(self)
+        self.slug = self.get_slug
+        self.net_pay = get_netpay_after_deduction_earning(self)
+        self.cooperative_deduction_rate = self.activate_cooperative_deduction
+        self.staff_loan_deduction_rate = self.activate_staff_loan_deduction
+
+        super(Payroll, self).save(*args, **kwargs)
+
+
+
+
+
+
+
+
+
+
+
+
+# class BasePayroll(models.Model):
+#     deduction_earning = models.ManyToManyField(
+#         DeductionsAndEarnings, related_name="deduction_earning", through="BaseEd"
+#     )
+#     company = models.ForeignKey(
+#         Company, on_delete=models.CASCADE, related_name="company_payroll"
+#     )
+#     slug = models.SlugField(max_length=255, blank=False, unique=True)
+    
+#     payment_method = models.CharField(max_length=3, choices=PAYMENT_METHOD, default="B")
+#     is_active = models.BooleanField(default=True)
+
+#     def get_absolute_url(self):
+#         return reverse("base_payroll", args=[self.slug])
+
+#     @property
+#     def get_year(self):
+#         return self.start_date.strftime("%m-%Y")
+
+#     def save(self, *args, **kwargs):
+#         self.slug = self.get_year
+#         super(BasePayroll, self).save(*args, **kwargs)
+
+#     def __str__(self):
+#         return str(self.start_date)

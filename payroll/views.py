@@ -1,36 +1,99 @@
-from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404, HttpResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.template.loader import get_template
 from django.db.models.functions import TruncMonth
 from django.db.models import Sum
-from django.views.generic import TemplateView 
+from django.views.generic import ListView
+from django.views.generic.edit import CreateView
+
+from django.forms import inlineformset_factory
 
 
 from xhtml2pdf import pisa
 
 from payroll.process import link_callback
-from payroll.models import Grade,Employee,User, DeductionsAndEarnings, Company
-from payroll.forms import DepartmentForm, GradeForm, PayrollForm, EmployeeForm, EandDForms, UserCreateForm
+from payroll.models import (
+    Grade,
+    Employee,
+    Company,
+    Payroll
+)
+from payroll.forms import (
+    DepartmentForm,
+    GradeForm,
+    EmployeeForm,
+    MonthForm
+
+)
 
 
 def home(request):
-    employee = Employee.objects.all()
+    employees = Employee.objects.all()
+    employees_count = employees.count()
 
 
-    return render(request,"home.html", {"employee": employee})
+    payee_count = Payroll.objects.order_by('month_year').distinct('month_year').count()
 
-def dashboard(request):
-    employee = Employee.objects.all()
-    variable = DeductionsAndEarnings.objects.all()
-    total_pay = DeductionsAndEarnings.objects.annotate(month=TruncMonth('base_payroll__start_date')).values('month').annotate(total_amount=Sum('employee__payroll__grade__gross_pay'))
+    nhif_count = Payroll.objects.order_by('month_year').distinct('month_year').count()
 
-    context = {
-        "total":total_pay,
-        "employee": employee,
-        "variable": variable
-    }
-    return render(request, "emp_dashboard.html", context)
+    nssf_count = Payroll.objects.order_by('month_year').distinct('month_year').count()
+
+    bank_report_count = Payroll.objects.order_by('month_year').distinct('month_year').count()
+
+    return render(request, 'payroll/index.html',
+                  {'employees_count': employees_count, 'nhif_count': nhif_count,
+                   'bank_report_count': bank_report_count, 'kra_count': payee_count, 'nssf_count':nssf_count})
+
+def employees(request):
+    employees = Employee.objects.all()
+    if request.method == 'POST':
+        form = EmployeeForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Employee added successfully")
+        else:
+            messages.error(request, "Error adding employee")
+    else:
+        form = EmployeeForm()
+    return render(request, 'payroll/employees.html', {'employees': employees, 'employee_form': form})
+
+def kra_view(request):
+    months = Payroll.objects.order_by('month_year').distinct('month_year')
+    return render(request, 'payroll/kra.html', {'months': months})
+
+
+def payee_report(request, month_year):
+    payroll = Payroll.objects.filter(month_year=month_year)
+    gross_pay_total = Payroll.objects.filter(month_year=month_year).aggregate(Sum('employee_id.grade.gross_pay'))['employee_id.grade.gross_pay__sum']
+    cooperatve_contribution_total = Payroll.objects.filter(month_year=month_year).aggregate(Sum('cooperative_deduction'))
+    staff_loan_total = Payroll.objects.filter(month_year=month_year).aggregate(Sum('staff_loan_deduction'))
+    staff_pension_total = Payroll.objects.filter(month_year=month_year).aggregate(Sum('pension_emp'))
+    tax_chargable = Payroll.objects.filter(month_year=month_year).aggregate(Sum('taxable_income'))['taxable_income__sum']
+    consolidated_relief = Payroll.objects.filter(month_year=month_year).aggregate(Sum('consolidated_relief'))
+    total_tax = Payroll.objects.filter(month_year=month_year).aggregate(Sum('payee'))['payee__sum']
+    return render(request, 'payroll/kra_report.html', {'payroll': payroll, 'monthyear': month_year,
+                                                       'gross_pay_total': gross_pay_total,
+                                                       'nssf_deduction': cooperatve_contribution_total['nssf_deduction__sum'],
+                                                       'nssf_deduction': staff_loan_total['staff_loan_deduction__sum'],
+                                                       'pension': staff_pension_total['pension_emp__sum'],
+                                                       'tax_chargable': tax_chargable,
+                                                       'personal_relief': consolidated_relief['consolidated_relief__sum'],
+                                                       'total_tax': total_tax})
+
+
+# def dashboard(request):
+#     employee = Employee.objects.all()
+#     variable = Payroll.objects.all()
+#     total_pay = BasePayroll.objects.annotate(month=TruncMonth('start_date')).values('month').annotate(total_amount=Sum('deduction_earning__employee__payroll__grade__gross_pay'))
+
+#     context = {
+#         "total":total_pay,
+#         "employee": employee,
+#         "variable": variable
+#     }
+#     return render(request, "emp_dashboard.html", context)
 
 @user_passes_test(lambda u: u.is_superuser)
 def addDepartment(request):
@@ -45,8 +108,12 @@ def addDepartment(request):
         "form": form,
     }
 
-    
     return render(request, "addDept.html", context)
+
+class CreateEmployee(CreateView):
+    template_name = "addEmployee.html"
+    form_class = EmployeeForm
+    success_url = '/'
 
 @user_passes_test(lambda u: u.is_superuser)
 def addGrade(request):
@@ -61,42 +128,37 @@ def addGrade(request):
     context = {
         "form": form,
     }
-    
     return render(request, "addGrade.html", context)
 
-@user_passes_test(lambda u: u.is_superuser)
-def addPayroll(request):
-    form = PayrollForm(request.POST or None,request.FILES or None)
+def generate_payroll(request, employee_id):
+    if request.method == 'POST':
+        form = MonthForm(request.POST)
 
-    if form.is_valid():
-        article = form.save()
-        article.save()
+        if form.is_valid():
+            employee = Employee.objects.get(pk=employee_id)
+            # calculate_payroll = EmployeePayroll(int(employee.basic_salary))
+            payroll = Payroll.objects.create(employee_id_id=employee_id)
+            payroll.month_year = form.cleaned_data['month']
+            payroll.save()
+            return HttpResponseRedirect('/')
+    else:
+        form = MonthForm()
 
-        messages.success(request,"Payroll created successfully")
-        return redirect('dashboard')
-    context = {
-        "form": form,
-    }
-    return render(request, "addpayroll.html", context)
+    payroll = Payroll.objects.filter(employee_id_id=employee_id)
 
-@user_passes_test(lambda u: u.is_superuser)
-def addEandD(request):
-    form = EandDForms(request.POST or None,request.FILES or None)
+    return render(request, 'payroll/calculate_payroll_employee.html', {'form': form, 'payrolls': payroll})
 
-    if form.is_valid():
-        article = form.save()
-        article.save()
 
-        messages.success(request,"Employee Earnings created successfully")
-        return redirect('dashboard')
-    context = {
-        "form": form,
-    }
-    return render(request, "addEandD.html", context)
+class PayrollView(ListView):
+    model = Payroll
+    template_name = "payroll_list.html"
+    context_object_name = 'employee'
+    ordering = ['-slug']
+    paginate_by = 10
 
 @user_passes_test(lambda u: u.is_superuser)
-def payslip(request,pk):
-    employee = get_object_or_404(DeductionsAndEarnings, pk=pk)
+def payslip(request,pay):
+    employee = get_object_or_404(DeductionsAndEarnings, slug=pay)
     company = Company.objects.all()
     context = {
         "employee": employee,
@@ -105,23 +167,10 @@ def payslip(request,pk):
 
     return render(request, "payslip_template.html", context)
 
-@user_passes_test(lambda u: u.is_superuser)
-def payrollUpdate(request, pk):
-    employee = get_object_or_404(DeductionsAndEarnings, pk=pk)
-    form = EandDForms(request.POST or None, request.FILES or None,instance = employee)
-    if form.is_valid():
-        emp = form.save(commit=False)
-        
-        emp.author = request.user
-        emp.save()
 
-        messages.success(request,"Payroll has been Updated")
-        return redirect("dashboard")
-    return render(request,"pay_update.html",{"form":form})
-
-def myview(request, pk):
+def myview(request, pay):
     template_path = 'payslip_temp.html'
-    var = get_object_or_404(DeductionsAndEarnings, pk=pk)
+    var = get_object_or_404(DeductionsAndEarnings, slug=pay)
     context = {'var': var}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')

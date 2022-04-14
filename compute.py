@@ -150,3 +150,19 @@ def initial_date(request, months=12):
             date_range = '%s - %s' % (str(date_three_months_ago).split(' ')[0].replace('-','/'),str(date_now).split(' ')[0].replace('-','/'))
             request.session['date_range'] = '%s - %s'%(str(date_three_months_ago).split(' ')[0].replace('-','/'),str(date_now).split(' ')[0].replace('-','/'))
     return [date_start, date_end, date_range]
+
+
+
+
+""" I found the solution. As I had expected, it was a very trivial overlook. 
+Just including subject as a parameter into the function allowed its use in the Entry model for querying purposes. 
+The working function is depicted below.
+ """
+def get_obj_orlist(request, subject):
+model = Entry
+try:
+    entry = Entry.objects.get(subject=subject)
+except Entry.DoesNotExist:
+    entries = Entry.objects.filter(subject__icontains=subject)
+    return render(request, 'wikiencyc/searchencyc.html', {'entries':entries,'searchtoken':subject} )
+return redirect(entry)

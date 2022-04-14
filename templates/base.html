@@ -1,24 +1,40 @@
-<!doctype html>
+{% load bootstrap4 %}
+{% load static %}
+
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <head>
+        <meta charset="utf-8">
+        {% if title %}
+        <title></title>
+        {% else %}
+        <title>Warda | Payroll</title>
+        {% endif %}
 
-  <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
-</head>
+        {% block styles %}
+        {% bootstrap_css %}
 
-<body>
-    {% include "navbar.html" %}
-    {% block content %}
+        {% endblock %}
+        <link rel="shortcut icon" type="image/png" href="{% static 'images/logo.jpg' %}">
+        <link href="https://fonts.googleapis.com/css?family=Antic+Slab|Della+Respira|Frank+Ruhl+Libre|Julius+Sans+One|Nixie+One|Saira" rel="stylesheet">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+        <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    </head>
 
-    {% endblock %}
-    {% include 'js.html' %}
-    <script>
-    $(document).ready(function(){
-      {% block jquery %}{% endblock %}
-    })
-    </script>
-</body>
+    <body>
+        {% include 'navbar.html' %}
+
+        {% block content %}
+
+        {% endblock %}
+
+        {% block scripts %}
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+            <script src= "{% static 'js/ajax.js'%}"></script>
+
+        {% bootstrap_javascript %}
+        {% endblock %}
+
+    </body>
+
 </html>

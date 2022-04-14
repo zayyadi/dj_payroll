@@ -5,19 +5,18 @@ GENDER=(
 )
 
 DESIGNATION = (
-    ('casual', 'Casual'),
-    ('floor', 'Floor Worker'),
-    ('packer', 'packer'),
-    ('label', 'Label Operator'),
-    ('supervisor', 'SUpervisor'),
-    ('manager', 'Manager'),
-    ('C.O.O', 'C.O.O'),
+    ('C', 'Casual'),
+    ('F', 'Floor Worker'),
+    ('PA', 'packer'),
+    ('A', 'ADMIN staff'),
+    ('P', 'PRODUCTION staff'),
+    ('L', 'Label Operator'),
+    ('SU', 'SUpervisor'),
+    ('M', 'Manager'),
+    ('COO', 'C.O.O'),
+    ('S', 'Store Control Officer')
 )
 
-USER_CHOICES = (
-    ('A', 'Admin'),
-    ('E', 'Employee'),
-)
 
 PAYMENT_METHOD = (
     ('B', 'BANK PAYMENT'),
@@ -25,12 +24,35 @@ PAYMENT_METHOD = (
 )
 
 BANK = (
-    ('Z', 'Zenith BANK'),
-    ('A', 'Access Bank'),
-    ('G', 'GT Bank'),
-    ('J', 'JAIZ Bank'),
-    ('FC', 'FCMB'),
-    ('F', 'First Bank'),
-    ('U', 'Union Bank'),
-    ('UB', 'UBA'),
+    ('Zenith', 'Zenith BANK'),
+    ('Access', 'Access Bank'),
+    ('GTB', 'GT Bank'),
+    ('Jaiz', 'JAIZ Bank'),
+    ('FCMB', 'FCMB'),
+    ('FBN', 'First Bank'),
+    ('Union', 'Union Bank'),
+    ('UBA', 'UBA'),
+)
+
+CONTRACT_TYPE = (
+        ('P', 'Permanent'),
+        ('T', 'Temporary')
+    )
+
+DEPARTMENT = (
+    ('A', 'Administration'),
+    ('P', 'Production'),
+    ('Pl', 'Plastic')
+)
+
+UNIT = (
+    ('B', 'Blending'),
+    ('F', 'Filling'),
+    ('FA', 'Finance&Accounting'),
+    ('HR', 'Human Resources'),
+    ('ICT', 'Information Communication Technology'),
+    ('L', 'Labelling'),
+    ('QC', 'Quality Control'),
+    ('S', 'Store'),
+    ('N', 'Null'),
 )

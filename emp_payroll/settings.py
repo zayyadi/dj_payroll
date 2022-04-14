@@ -25,8 +25,9 @@ INSTALLED_APPS = [
     'import_export',
     'django.contrib.humanize',
     'bootstrap4',
-    'rest_framework',
-    'payroll'
+    'widget_tweaks',
+    'payroll',
+    'date'
 ]
 
 MIDDLEWARE = [
@@ -66,8 +67,12 @@ WSGI_APPLICATION = 'emp_payroll.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get("DB_USER"),
+        'PASSWORD': os.environ.get("DB_PASSWORD"),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
